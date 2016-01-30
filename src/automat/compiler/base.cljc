@@ -1,18 +1,14 @@
 (ns automat.compiler.base
   (:refer-clojure :exclude [compile])
   (:require
-   [automat.compiler.core :as core :refer [#+cljs ICompiledAutomaton
-                                           #+cljs CompiledAutomatonState]]
+   [automat.compiler.core :as core
+    :refer #?(:clj [] :cljs [ICompiledAutomaton CompiledAutomatonState])]
    [automat.fsm :as fsm]
    [automat.stream :as stream])
-  #+clj
-  (:import
-   [automat.compiler.core
-    ICompiledAutomaton
-    CompiledAutomatonState]))
+  #?(:clj (:import [automat.compiler.core ICompiledAutomaton CompiledAutomatonState])))
 
 (defn- advance [fsm state stream signal reducers restart?]
-  (let [signal #(if (#+clj identical? #+cljs keyword-identical? % ::eof) % (signal %))
+  (let [signal #(if (#?(:clj identical? :cljs keyword-identical?) % ::eof) % (signal %))
         ^CompiledAutomatonState original-state state
         stream (stream/to-stream stream)
         original-stream-index (.-stream-index original-state)]
@@ -23,7 +19,7 @@
            stream-index original-stream-index]
 
       (let [input (signal original-input)]
-        (if (#+clj identical? #+cljs keyword-identical? ::eof input)
+        (if (#?(:clj identical? :cljs keyword-identical?) ::eof input)
 
           (if (== original-stream-index stream-index)
             original-state
@@ -55,7 +51,7 @@
                                 stream-index)]
 
             (cond
-              (or (nil? state') (#+clj identical? #+cljs keyword-identical? fsm/reject state'))
+              (or (nil? state') (#?(:clj identical? :cljs keyword-identical?) fsm/reject state'))
               (if restart?
                 (recur
                   (if (= state 0)
@@ -107,7 +103,7 @@
         (advance-stream [this state stream reject-value]
           (let [state (core/->automaton-state this state)
                 state' (advance fsm state stream signal reducers false)]
-            (if (#+clj identical? #+cljs keyword-identical? ::reject state')
+            (if (#?(:clj identical? :cljs keyword-identical?) ::reject state')
               reject-value
               state'))))
       {:fsm (-> fsm meta :fsm)})))

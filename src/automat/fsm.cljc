@@ -1,13 +1,10 @@
 (ns automat.fsm
   (:refer-clojure :exclude [concat complement])
-  #+clj
-  (:use
-   [potemkin.types])
-  (:require
-    [clojure.set :as set]
-    #+clj [clojure.core :as clj]
-    #+cljs [cljs.core :as clj :include-macros true]
-    #+clj [primitive-math :as p]))
+#?(:clj (:use [potemkin.types]))
+  (:require [clojure.set :as set]
+    #?(:clj  [clojure.core :as clj])
+    #?(:clj  [primitive-math :as p]
+       :cljs [cljs.core :as clj :include-macros true])))
 
 (def ^:const epsilon "An input representing no input." ::epsilon)
 (def ^:const default "An input representing a default" ::default)
@@ -20,38 +17,31 @@
   (defn reset-generations []
     (reset! cnt 0)))
 
-(#+clj deftype+ #+cljs deftype State
+(#?(:clj deftype+ :cljs deftype) State
   [generation
    descriptor
    sub-states
    action]
   Object
-  #+clj
-  (hashCode [_]
-   (p/+
-    (hash generation)
-    (hash descriptor)
-    (hash sub-states)))
-  #+cljs
-  (equiv [this x] (-equiv this x))
-  #+cljs
-  IEquiv
-  (#+clj equals #+cljs -equiv [_ x]
-   (and
-    (instance? State x)
-    (let [^State x x]
-      (and
-       (= generation (.-generation x))
-       (= descriptor (.-descriptor x))
-       (= sub-states (.-sub-states x))))))
-  #+cljs
-  IHash
-  #+cljs
-  (-hash [_]
-   (+
-    (hash generation)
-    (hash descriptor)
-    (hash sub-states))))
+  #?(:clj (hashCode []
+            (p/+ (hash generation)
+                 (hash descriptor)
+                 (hash sub-states)))
+     :cljs (equiv [this x] (-equiv this x)))
+#?(:cljs IEquiv)
+(#?(:clj equals :cljs -equiv) [_ x]
+  (and
+   (instance? State x)
+   (let [^State x x]
+     (and
+      (= generation (.-generation x))
+      (= descriptor (.-descriptor x))
+      (= sub-states (.-sub-states x))))))
+#?(:cljs IHash)
+#?(:cljs (-hash [_]
+           (+ (hash generation)
+              (hash descriptor)
+              (hash sub-states)))))
 
 (defn- assoc-action [^State s action]
   (State.
@@ -61,7 +51,7 @@
     action))
 
 (defn- conj-generation [^State s gen]
-  (if (#+clj identical? #+cljs keyword-identical? reject s)
+  (if (#?(:clj identical? :cljs keyword-identical?) reject s)
     reject
     (State.
       (conj (.-generation s) gen)
@@ -75,7 +65,7 @@
   ([x]
      (cond
        (instance? State x) x
-       (#+clj identical? #+cljs keyword-identical? x reject) x
+       (#?(:clj identical? :cljs keyword-identical?) x reject) x
        :else (State. nil x #{} nil))))
 
 (defn action [^State s]
@@ -84,7 +74,7 @@
 
 (defn- join-states
   ([^State s]
-     (if (#+clj identical? #+cljs keyword-identical? reject s)
+     (if (#?(:clj identical? :cljs keyword-identical?) reject s)
        s
        (State. (.-generation s) (.-descriptor s) (.-sub-states s) nil)))
   ([s & rest]
@@ -92,7 +82,7 @@
 
 ;;;
 
-(#+clj definterface+ #+cljs defprotocol IAutomaton
+(#?(:clj definterface+ :cljs defprotocol) IAutomaton
   (deterministic? [_] "Returns true if the automata is a DFA, false otherwise.")
   (states [_] "The set of possible states within the automata.")
   (alphabet [_] "The set of possible inputs for the automata.")
@@ -103,7 +93,7 @@
   (gensym-states [_]))
 
 (defn automaton? [x]
-  (#+clj instance? #+cljs satisfies? IAutomaton x))
+  (#?(:clj instance? :cljs satisfies?) IAutomaton x))
 
 (defn actions
   "Return set of actions for the given state and input."
@@ -379,7 +369,7 @@
             (map
               (fn [[input actions]]
                 [input
-                 (if (#+clj identical? #+cljs keyword-identical? pre input)
+                 (if (#?(:clj identical? :cljs keyword-identical?) pre input)
                    actions
                    (conj (or actions #{}) action))]))
             (into {})))))))
@@ -589,8 +579,8 @@
               (and (number? a) (number? b))
               (compare a b)
 
-              #+clj (and (char? a) (char? b))
-              #+clj (compare a b)
+           #?@(:clj [(and (char? a) (char? b))
+                     (compare a b)])
 
               :else
               (compare (str (type a)) (str (type b)))))]
@@ -835,12 +825,12 @@
                   (recur)))
               ::none)))))))
 
-#+clj ; cljs.compiler tries to emit metadata on precompiled automata and chokes on IAutomaton
-(do
-  (defmacro ^:private cljs-emit-constant []
-    (when (try
-            (-> 'cljs.compiler require nil?)
-            (catch Exception _))
-      `(defmethod cljs.compiler/emit-constant ~IAutomaton [x#]
-         (cljs.compiler/emit-constant nil))))
-  (cljs-emit-constant))
+#?(:clj ; cljs.compiler tries to emit metadata on precompiled automata and chokes on IAutomaton
+   (do
+     (defmacro ^:private cljs-emit-constant []
+       (when (try
+               (-> 'cljs.compiler require nil?)
+               (catch Exception _))
+         `(defmethod cljs.compiler/emit-constant ~IAutomaton [x#]
+            (cljs.compiler/emit-constant nil))))
+     (cljs-emit-constant)))
