@@ -66,7 +66,7 @@
                                x))))))))))
    
    #?(:cljs (defprotocol InputStream
-              (nextInput [_ eof])))
+               (nextInput [_ eof])))
    
    #?(:cljs (defn to-stream [x]
               (if (satisfies? InputStream x)

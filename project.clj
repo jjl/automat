@@ -26,7 +26,7 @@
   :test-paths ["test" "target/test"]
   :plugins [[codox "0.6.4"]
             [com.cemerick/clojurescript.test "0.3.3"]
-            [lein-cljsbuild "1.0.4"]]
+            [lein-cljsbuild "1.1.2"]]
   :cljsbuild {:builds [{:source-paths ["src" "test"]
                         :compiler {:output-to "target/test.js"
                                    :source-map "target/test.js.map"
