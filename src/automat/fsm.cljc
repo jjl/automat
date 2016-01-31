@@ -2,9 +2,9 @@
   (:refer-clojure :exclude [concat complement])
 #?(:clj (:use [potemkin.types]))
   (:require [clojure.set :as set]
-    #?(:clj  [clojure.core :as clj])
-    #?(:clj  [primitive-math :as p]
-       :cljs [cljs.core :as clj :include-macros true])))
+   #?(:clj  [clojure.core :as clj])
+   #?(:clj  [primitive-math :as p]
+      :cljs [cljs.core :as clj :include-macros true])))
 
 (def ^:const epsilon "An input representing no input." ::epsilon)
 (def ^:const default "An input representing a default" ::default)
@@ -23,7 +23,7 @@
    sub-states
    action]
   Object
-  #?(:clj (hashCode []
+  #?(:clj (hashCode [_]
             (p/+ (hash generation)
                  (hash descriptor)
                  (hash sub-states)))
